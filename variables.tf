@@ -8,6 +8,11 @@ variable "region" {
   default = "ams3"
 }
 
+variable "image" {
+    type = string
+    default = "hashicraft/minecraft:v1.16.2"
+}
+
 variable "port" {
     type = number
     default = 25565
@@ -38,7 +43,6 @@ variable "mounts" {
       source = "mods"
       destination = "/minecraft/mods"
     },
-    
     {
       source = "world"
       destination = "/minecraft/world"

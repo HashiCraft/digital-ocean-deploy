@@ -51,7 +51,7 @@ resource "kubernetes_deployment" "minecraft" {
 
       spec {
         container {
-          image = "hashicraft/minecraft:v1.16.2"
+          image = var.image
           name  = "minecraft"
 
           port {
