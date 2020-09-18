@@ -1,15 +1,20 @@
+provider "digitalocean" {
+  version = "1.22.2"
+}
+
 resource "digitalocean_kubernetes_cluster" "minecraft" {
   name    = "minecraft"
-  region  = "ams3"
+  region  = var.region
   # Grab the latest version slug from `doctl kubernetes options versions`
   version = "1.18.8-do.0"
 
   node_pool {
     name       = "worker-pool"
     size       = "s-2vcpu-2gb"
-    node_count = 1
+    node_count = var.node_count
   }
 }
+
 
 provider "kubernetes" {
   load_config_file = false
@@ -50,52 +55,32 @@ resource "kubernetes_deployment" "minecraft" {
           name  = "minecraft"
 
           port {
-            container_port = 25565
+            container_port = var.port
             name = "minecraft"
           }
 
-          env {
-            name = "MINECRAFT_MOTD"
-            value = "HashiCraft"
-          }
-  
-          env {
-            name = "RCON_PASSWORD"
-            value = "password"
-          }
-  
-          env {
-            name = "RCON_ENABLED"
-            value = "true"
-          }
+          dynamic "env" {
+            for_each = var.envs
 
-          # Install default Mods and World
-          env {
-            name = "WORLD_BACKUP"
-            value = "https://github.com/HashiCraft/digital-ocean-tide/releases/download/v0.0.0/world.tar.gz"
-          }
-
-          volume_mount {
-            mount_path = "/minecraft/mods"
-            name = "minecraftdata"
-            sub_path = "mods"
+            content {
+              name = env.key
+              value = env.value
+            }
           }
           
-          volume_mount {
-            mount_path = "/minecraft/world"
-            name = "minecraftdata"
-            sub_path = "world"
-          }
-          
-          volume_mount {
-            mount_path = "/minecraft/config"
-            name = "minecraftdata"
-            sub_path = "config"
+          dynamic "volume_mount" {
+            for_each = var.mounts
+
+            content {
+              name = kubernetes_persistent_volume_claim.minecraftdata.metadata.0.name
+              sub_path = volume_mount.value.source
+              mount_path = volume_mount.value.destination
+            }
           }
         }
 
         volume {
-          name = "minecraftdata"
+          name = kubernetes_persistent_volume_claim.minecraftdata.metadata.0.name
           persistent_volume_claim {
             claim_name = kubernetes_persistent_volume_claim.minecraftdata.metadata.0.name
           }
@@ -107,7 +92,7 @@ resource "kubernetes_deployment" "minecraft" {
 
 resource "kubernetes_persistent_volume_claim" "minecraftdata" {
   metadata {
-    name = "minecraftdata"
+    name = var.volume
   }
   spec {
     access_modes = ["ReadWriteOnce"]
@@ -129,8 +114,8 @@ resource "kubernetes_service" "minecraft" {
     }
     
     port {
-      port        = 25565
-      target_port = 25565
+      port        = var.port
+      target_port = var.port
     }
 
     type = "LoadBalancer"
@@ -139,4 +124,8 @@ resource "kubernetes_service" "minecraft" {
 
 output "k8s_config" {
   value = digitalocean_kubernetes_cluster.minecraft.kube_config.0.raw_config
+}
+
+output "lb_address" {
+  value = kubernetes_service.minecraft.load_balancer_ingress.0.ip
 }
