@@ -1,2 +1,2 @@
-# digital-occean-tide
-Source repository for Digital Ocean tide conference
+# Terraform Kubernetes Digital Ocean Deploy
+Source repository for Digital Ocean deploy conference
