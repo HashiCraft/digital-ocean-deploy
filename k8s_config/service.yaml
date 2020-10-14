@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: minecraft-service
+spec:
+  selector:
+    app: minecraft
+  ports:
+    - protocol: TCP
+      port: 25565
+  type: LoadBalancer

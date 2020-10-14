@@ -3,7 +3,7 @@ provider "digitalocean" {
 }
 
 resource "digitalocean_kubernetes_cluster" "minecraft" {
-  name    = "minecraft"
+  name    = "minecraft-dev"
   region  = var.region
   # Grab the latest version slug from `doctl kubernetes options versions`
   version = "1.18.8-do.0"
@@ -15,8 +15,9 @@ resource "digitalocean_kubernetes_cluster" "minecraft" {
   }
 }
 
-
 provider "kubernetes" {
+  version = "1.13.2"
+
   load_config_file = false
   host  = digitalocean_kubernetes_cluster.minecraft.endpoint
   token = digitalocean_kubernetes_cluster.minecraft.kube_config[0].token
@@ -53,12 +54,13 @@ resource "kubernetes_deployment" "minecraft" {
         container {
           image = var.image
           name  = "minecraft"
+          image_pull_policy = "Always"
 
           port {
             container_port = var.port
             name = "minecraft"
           }
-
+          
           dynamic "env" {
             for_each = var.envs
 
@@ -67,7 +69,7 @@ resource "kubernetes_deployment" "minecraft" {
               value = env.value
             }
           }
-          
+
           dynamic "volume_mount" {
             for_each = var.mounts
 
@@ -77,32 +79,21 @@ resource "kubernetes_deployment" "minecraft" {
               mount_path = volume_mount.value.destination
             }
           }
+         
         }
 
         volume {
           name = kubernetes_persistent_volume_claim.minecraftdata.metadata.0.name
           persistent_volume_claim {
             claim_name = kubernetes_persistent_volume_claim.minecraftdata.metadata.0.name
-          }
+         }
         }
+
       }
     }
   }
 }
 
-resource "kubernetes_persistent_volume_claim" "minecraftdata" {
-  metadata {
-    name = var.volume
-  }
-  spec {
-    access_modes = ["ReadWriteOnce"]
-    resources {
-      requests = {
-        storage = "10Gi"
-      }
-    }
-  }
-}
 
 resource "kubernetes_service" "minecraft" {
   metadata {
@@ -119,6 +110,20 @@ resource "kubernetes_service" "minecraft" {
     }
 
     type = "LoadBalancer"
+  }
+}
+
+resource "kubernetes_persistent_volume_claim" "minecraftdata" {
+  metadata {
+    name = var.volume
+  }
+  spec {
+    access_modes = ["ReadWriteOnce"]
+    resources {
+      requests = {
+        storage = "10Gi"
+      }
+    }
   }
 }
 

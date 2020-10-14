@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minecraft-deployment
+  labels:
+    app: minecraft
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: minecraft
+  template:
+    metadata:
+      labels:
+        app: minecraft
+    spec:
+      containers:
+      - name: minecraft
+        image: hashicraft/minecraft:v1.16.3
+        ports:
+          - containerPort: 25565
+        env:
+          - name: "MINECRAFT_MOTD"
+            value: "HashiCraft"
+          - name: "RCON_ENABLED"
+            value: "true"
+          - name: "RCON_PASSWORD"
+            value: "password"
+          - name: "WORLD_BACKUP"
+            value: "https://github.com/HashiCraft/digital-ocean-tide/releases/download/v0.0.0/world.tar.gz"
+          - name: "MODS_BACKUP"
+            value: "https://github.com/HashiCraft/digital-ocean-tide/releases/download/v0.0.0/mods.tar.gz"
+        volumeMounts:
+          - mountPath: "/minecraft/world"
+            subPath: "world"
+            name: minecraft
+          - mountPath: "/minecraft/mods"
+            subPath: "mods"
+            name: minecraft
+          - mountPath: "/minecraft/config"
+            subPath: "config"
+            name: minecraft
+      volumes:
+        - name: minecraft
+          persistentVolumeClaim:
+            claimName: minecraft
