@@ -3,10 +3,10 @@ provider "digitalocean" {
 }
 
 resource "digitalocean_kubernetes_cluster" "minecraft" {
-  name    = "minecraft-dev"
+  name    = var.name
   region  = var.region
   # Grab the latest version slug from `doctl kubernetes options versions`
-  version = "1.18.8-do.0"
+  version = "1.19.3-do.2"
 
   node_pool {
     name       = "worker-pool"
