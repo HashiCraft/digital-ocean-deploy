@@ -207,7 +207,7 @@ to get shell access to the container.
 
 ```
 KUBECONFIG=$PWD/kubeconfig.yaml kubectl exec -it \
-  $(kubectl get pods -l app=minecraft -o=jsonpath='{.items[0].metadata.name}') \
+  $(KUBECONFIG=$PWD/kubeconfig.yaml kubectl get pods -l app=minecraft -o=jsonpath='{.items[0].metadata.name}') \
   bash
 ```
 
