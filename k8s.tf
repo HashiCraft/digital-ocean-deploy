@@ -1,12 +1,22 @@
-provider "digitalocean" {
-  version = "1.22.2"
+terraform {
+  required_providers {
+    digitalocean = {
+      source  = "digitalocean/digitalocean"
+      version = "~> 2.0"
+    }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.0"
+    }
+  }
 }
+
+provider "digitalocean" {}
 
 resource "digitalocean_kubernetes_cluster" "minecraft" {
   name    = var.name
   region  = var.region
-  # Grab the latest version slug from `doctl kubernetes options versions`
-  version = "1.19.3-do.2"
+  version = "1.28.2-do.0"
 
   node_pool {
     name       = "worker-pool"
@@ -16,19 +26,14 @@ resource "digitalocean_kubernetes_cluster" "minecraft" {
 }
 
 provider "kubernetes" {
-  version = "1.13.2"
-
-  load_config_file = false
-  host  = digitalocean_kubernetes_cluster.minecraft.endpoint
-  token = digitalocean_kubernetes_cluster.minecraft.kube_config[0].token
-  cluster_ca_certificate = base64decode(
-    digitalocean_kubernetes_cluster.minecraft.kube_config[0].cluster_ca_certificate
-  )
+  host                   = digitalocean_kubernetes_cluster.minecraft.endpoint
+  token                  = digitalocean_kubernetes_cluster.minecraft.kube_config[0].token
+  cluster_ca_certificate = base64decode(digitalocean_kubernetes_cluster.minecraft.kube_config[0].cluster_ca_certificate)
 }
 
 resource "kubernetes_deployment" "minecraft" {
   metadata {
-    name = "minecraft"
+    name   = "minecraft"
     labels = {
       app = "minecraft"
     }
@@ -52,20 +57,20 @@ resource "kubernetes_deployment" "minecraft" {
 
       spec {
         container {
-          image = var.image
-          name  = "minecraft"
+          image             = var.image
+          name              = "minecraft"
           image_pull_policy = "Always"
 
           port {
             container_port = var.port
-            name = "minecraft"
+            name           = "minecraft"
           }
-          
+
           dynamic "env" {
             for_each = var.envs
 
             content {
-              name = env.key
+              name  = env.key
               value = env.value
             }
           }
@@ -74,36 +79,35 @@ resource "kubernetes_deployment" "minecraft" {
             for_each = var.mounts
 
             content {
-              name = kubernetes_persistent_volume_claim.minecraftdata.metadata.0.name
-              sub_path = volume_mount.value.source
+              name       = kubernetes_persistent_volume_claim.minecraftdata.metadata[0].name
+              sub_path   = volume_mount.value.source
               mount_path = volume_mount.value.destination
             }
           }
-         
         }
 
         volume {
-          name = kubernetes_persistent_volume_claim.minecraftdata.metadata.0.name
-          persistent_volume_claim {
-            claim_name = kubernetes_persistent_volume_claim.minecraftdata.metadata.0.name
-         }
-        }
+          name = kubernetes_persistent_volume_claim.minecraftdata.metadata[0].name
 
+          persistent_volume_claim {
+            claim_name = kubernetes_persistent_volume_claim.minecraftdata.metadata[0].name
+          }
+        }
       }
     }
   }
 }
 
-
 resource "kubernetes_service" "minecraft" {
   metadata {
     name = "minecraft"
   }
+
   spec {
     selector = {
-      app = kubernetes_deployment.minecraft.metadata.0.labels.app
+      app = "minecraft"
     }
-    
+
     port {
       port        = var.port
       target_port = var.port
@@ -117,6 +121,7 @@ resource "kubernetes_persistent_volume_claim" "minecraftdata" {
   metadata {
     name = var.volume
   }
+
   spec {
     access_modes = ["ReadWriteOnce"]
     resources {
@@ -128,9 +133,10 @@ resource "kubernetes_persistent_volume_claim" "minecraftdata" {
 }
 
 output "k8s_config" {
-  value = digitalocean_kubernetes_cluster.minecraft.kube_config.0.raw_config
+  value = digitalocean_kubernetes_cluster.minecraft.kube_config[0].raw_config
+  sensitive = true
 }
 
 output "lb_address" {
-  value = kubernetes_service.minecraft.load_balancer_ingress.0.ip
+  value = kubernetes_service.minecraft.status[0].load_balancer[0].ingress[0].ip
 }
