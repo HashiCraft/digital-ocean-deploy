@@ -1,12 +1,14 @@
 # Terraform Kubernetes Digital Ocean Deploy
+
 Source repository for Digital Ocean deploy conference. This repository contains an example showing
 how to create a Kubernetes cluster in Digital Ocean, and how to deploy applications to it using Terraform.
 
 ## Resources Created
-* 1x DOKS cluster, single node `s-2vcpu-2gb`
-* Minecraft running as a pod on the clsuter
-* 1x External load balancer pointed at the Minecraft instance
-* 1x 10GB volume attached to the Minecraft pod used for storing config
+
+- 1x DOKS cluster, single node `s-2vcpu-2gb`
+- Minecraft running as a pod on the clsuter
+- 1x External load balancer pointed at the Minecraft instance
+- 1x 10GB volume attached to the Minecraft pod used for storing config
   and data.
 
 ## Setup
@@ -17,19 +19,19 @@ Terraform can be installed from the following link: [https://www.terraform.io/do
 
 ### Obtain your Digital Ocean API Key and set it as an environment variable
 
-* Visit the page:
-[https://cloud.digitalocean.com/account/api/tokens](https://cloud.digitalocean.com/account/api/tokens)
+- Visit the page:
+  [https://cloud.digitalocean.com/account/api/tokens](https://cloud.digitalocean.com/account/api/tokens)
 
-* Click Generate New Token:  
-![](images/generate.png)
+- Click Generate New Token:  
+  ![](images/generate.png)
 
-* Give the token a name, ensure Read and Write is set and click generate  
-![](images/dialog.png)
+- Give the token a name, ensure Read and Write is set and click generate  
+  ![](images/dialog.png)
 
-* Copy the the token (long string beneath the name) to your clip board  
-![](images/token.png)
+- Copy the the token (long string beneath the name) to your clip board  
+  ![](images/token.png)
 
-* Create an environment variable using the token
+- Create an environment variable using the token
 
 ```shell
 export DIGITALOCEAN_TOKEN=c789eb2af98226de4f31582016b3eb83298a7a3baeb608310880936899a4a4d9
@@ -39,8 +41,8 @@ Terraform will automaticaly read the environment variable `DIGITALOCEAN_TOKEN` a
 to communicate with the Digital Ocean API. NOTE: Ensure to keep this token private
 do not add it to any files which may be uploaded to public souce code repositories like GitHub.
 
-
 ## Initialize Terraform
+
 Before creating resources with Terraform you need to initialize the configuration, this downloads
 any necessary dependencies and should only need to be done once. To do this run `terraform init`
 in the current folder.
@@ -72,7 +74,7 @@ commands will detect it and remind you to do so if necessary.
 
 ## Terraform apply
 
-To create resources you can run a `terraform apply`, this will create the cluster and 
+To create resources you can run a `terraform apply`, this will create the cluster and
 the application. Before Terraform creates the cluster it will inform you of the changes
 it is about to make. This is known as the Terraform plan. Before Terraform will actually
 create the resources you need to answer `yes` that you approve the plan.
@@ -164,15 +166,16 @@ lb_address = 188.166.134.43
 ```
 
 ## Connecting to the cluster
+
 To connect to the cluster you need to fetch a Kubernetes config file, Terraform allows the definition of output
 variables which contain data from the created resources. The `k8s_config` variable contains the config needed
 to connect to the cluster. You can output this to a file using the following command:
 
 ```
-terraform output k8s_config > kubeconfig.yaml
+terraform output -raw k8s_config > kubeconfig.yaml
 ```
 
-Then you can use `kubectl` as normal to connect to the cluster, running get pods will show you a single pod 
+Then you can use `kubectl` as normal to connect to the cluster, running get pods will show you a single pod
 running.
 
 ```
@@ -182,7 +185,8 @@ minecraft-66988b7999-wgm5k   1/1     Running   0          7m39s
 ```
 
 ## Connecting to the Minecraft server
-As an example application a Minecraft server has been deployed as a pod to your Kuberenetes cluster. To 
+
+As an example application a Minecraft server has been deployed as a pod to your Kuberenetes cluster. To
 access the server an external loadbalancer has been created. The address for this load balancer can be
 retrieved by again querying Terraform output variables.
 
@@ -202,7 +206,7 @@ can add authorization to access the server.
 
 ![](images/minecraft_2.png)
 
-You can add access by using the `rcon-cli` inside the Minecraft container, use the following command 
+You can add access by using the `rcon-cli` inside the Minecraft container, use the following command
 to get shell access to the container.
 
 ```
@@ -229,8 +233,8 @@ Once you have whitelisted your user you can now log into the server.
 
 ![](images/minecraft_3.png)
 
-
 ## Cleaning up and Destroying resources
+
 To clean up all resource created you can use the `teraform destroy` command.
 
 ```
